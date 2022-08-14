@@ -58,8 +58,8 @@ namespace Stockfish::Tools
             // minimum ply with random move
             // maximum ply with random move
             // Number of random moves in one station
-            int random_move_minply = 1;
-            int random_move_maxply = 24;
+            int random_move_min_ply = 1;
+            int random_move_max_ply = 24;
             int random_move_count = 5;
 
             // Move kings with a probability of 1/N when randomly moving like Apery software.
@@ -81,8 +81,8 @@ namespace Stockfish::Tools
 
             // The minimum and maximum ply (number of steps from
             // the initial phase) of the sfens to write out.
-            int write_minply = 16;
-            int write_maxply = 400;
+            int write_min_ply = 16;
+            int write_max_ply = 400;
 
             uint64_t save_every = std::numeric_limits<uint64_t>::max();
 
@@ -256,7 +256,7 @@ namespace Stockfish::Tools
         // at the maximum number of steps to write.
         // Maximum StateInfo + Search PV to advance to leaf buffer
         std::vector<StateInfo, AlignedAllocator<StateInfo>> states(
-            params.write_maxply + MAX_PLY /* == search_depth_min + α */);
+            params.write_max_ply + MAX_PLY /* == search_depth_min + α */);
 
         StateInfo si;
 
@@ -286,13 +286,13 @@ namespace Stockfish::Tools
             bool should_resign = prng.rand(10) > 1;
             // Vector for holding the sfens in the current simulated game.
             PSVector packed_sfens;
-            packed_sfens.reserve(params.write_maxply + MAX_PLY);
+            packed_sfens.reserve(params.write_max_ply + MAX_PLY);
 
             // Precomputed flags. Used internally by choose_random_move.
             vector<uint8_t> random_move_flag = generate_random_move_flags(prng);
 
             // A counter that keeps track of the number of random moves
-            // When random_move_minply == -1, random moves are
+            // When random_move_min_ply == -1, random moves are
             // performed continuously, so use it at this time.
             // Used internally by choose_random_move.
             int actual_random_move_count = 0;
@@ -349,13 +349,13 @@ namespace Stockfish::Tools
                 // Save the move score for adjudication.
                 move_hist_scores.push_back(search_value);
 
-                // Discard stuff before write_minply is reached
+                // Discard stuff before write_min_ply is reached
                 // because it can harm training due to overfitting.
                 // Initial positions would be too common.
 
                 // Filter for static positions using abs(qsearch_value - eval_value)
                 // sync_cout << pos.fen() << " | " << search_value << " | " << qsearch_value << " | " << eval_value << sync_endl;
-                if (ply >= params.write_minply && !was_seen_before(pos)
+                if (ply >= params.write_min_ply && !was_seen_before(pos)
                     && !pos.checkers() && pos.nnue_applicable() && std::abs(qsearch_value - eval_value) <= params.eval_diff_limit)
                 {
                     auto& psv = packed_sfens.emplace_back();
@@ -449,7 +449,7 @@ namespace Stockfish::Tools
         // has it reached the max length or is a draw by fifty-move rule
         // or by 3-fold repetition
         Value v = VALUE_DRAW;
-        if (ply >= params.write_maxply || pos.is_game_end(v))
+        if (ply >= params.write_max_ply || pos.is_game_end(v))
         {
             return sign(v);
         }
@@ -522,18 +522,18 @@ namespace Stockfish::Tools
         // to shuffle the first N pieces with Fisher-Yates.
 
         vector<int> a;
-        a.reserve((size_t)params.random_move_maxply);
+        a.reserve((size_t)params.random_move_max_ply);
 
-        // random_move_minply ,random_move_maxply is specified by 1 origin,
+        // random_move_min_ply ,random_move_max_ply is specified by 1 origin,
         // Note that we are handling 0 origin here.
-        for (int i = std::max(params.random_move_minply - 1, 0); i < params.random_move_maxply; ++i)
+        for (int i = std::max(params.random_move_min_ply - 1, 0); i < params.random_move_max_ply; ++i)
         {
             a.push_back(i);
         }
 
         // In case of Apery random move, insert() may be called random_move_count times.
         // Reserve only the size considering it.
-        random_move_flag.resize((size_t)params.random_move_maxply + params.random_move_count);
+        random_move_flag.resize((size_t)params.random_move_max_ply + params.random_move_count);
 
         // A random move that exceeds the size() of a[] cannot be applied, so limit it.
         for (int i = 0; i < std::min(params.random_move_count, (int)a.size()); ++i)
@@ -556,10 +556,10 @@ namespace Stockfish::Tools
 
         // Randomly choose one from legal move
         if (
-            // 1. Random move of random_move_count times from random_move_minply to random_move_maxply
-            (params.random_move_minply != -1 && ply < (int)random_move_flag.size() && random_move_flag[ply]) ||
+            // 1. Random move of random_move_count times from random_move_min_ply to random_move_max_ply
+            (params.random_move_min_ply != -1 && ply < (int)random_move_flag.size() && random_move_flag[ply]) ||
             // 2. A mode to perform random move of random_move_count times after leaving the startpos
-            (params.random_move_minply == -1 && random_move_c < params.random_move_count))
+            (params.random_move_min_ply == -1 && random_move_c < params.random_move_count))
         {
             ++random_move_c;
 
@@ -767,9 +767,9 @@ namespace Stockfish::Tools
             else if (token == "eval_diff_limit")
                 is >> params.eval_diff_limit;
             else if (token == "random_move_min_ply")
-                is >> params.random_move_minply;
+                is >> params.random_move_min_ply;
             else if (token == "random_move_max_ply")
-                is >> params.random_move_maxply;
+                is >> params.random_move_max_ply;
             else if (token == "random_move_count")
                 is >> params.random_move_count;
             else if (token == "random_move_like_apery")
@@ -781,9 +781,9 @@ namespace Stockfish::Tools
             else if (token == "random_multi_pv_depth")
                 is >> params.random_multi_pv_depth;
             else if (token == "write_min_ply")
-                is >> params.write_minply;
+                is >> params.write_min_ply;
             else if (token == "write_max_ply")
-                is >> params.write_maxply;
+                is >> params.write_max_ply;
             else if (token == "save_every")
                 is >> params.save_every;
             else if (token == "book")
@@ -859,15 +859,15 @@ namespace Stockfish::Tools
             << "  - eval_limit             = " << params.eval_limit << endl
             << "  - eval_diff_limit        = " << params.eval_diff_limit << endl
             << "  - num threads (UCI)      = " << params.num_threads << endl
-            << "  - random_move_min_ply    = " << params.random_move_minply << endl
-            << "  - random_move_max_ply    = " << params.random_move_maxply << endl
+            << "  - random_move_min_ply    = " << params.random_move_min_ply << endl
+            << "  - random_move_max_ply    = " << params.random_move_max_ply << endl
             << "  - random_move_count      = " << params.random_move_count << endl
             << "  - random_move_like_apery = " << params.random_move_like_apery << endl
             << "  - random_multi_pv        = " << params.random_multi_pv << endl
             << "  - random_multi_pv_diff   = " << params.random_multi_pv_diff << endl
             << "  - random_multi_pv_depth  = " << params.random_multi_pv_depth << endl
-            << "  - write_min_ply          = " << params.write_minply << endl
-            << "  - write_max_ply          = " << params.write_maxply << endl
+            << "  - write_min_ply          = " << params.write_min_ply << endl
+            << "  - write_max_ply          = " << params.write_max_ply << endl
             << "  - book                   = " << params.book << endl
             << "  - output_file_name       = " << params.output_file_name << endl
             << "  - save_every             = " << params.save_every << endl
