@@ -7426,7 +7426,7 @@ namespace binpack
             }
         }
 
-        [[nodiscard]] bool hasNext()
+        [[nodiscard]] bool hasNext() const
         {
             return !m_isEnd;
         }
