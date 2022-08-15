@@ -60,11 +60,15 @@ SRCS = benchmark.cpp bitbase.cpp bitboard.cpp endgame.cpp evaluate.cpp main.cpp 
 	tools/opening_book.cpp \
 	tools/convert.cpp \
 	tools/transform.cpp \
-	tools/stats.cpp
+	tools/stats.cpp \
+	tools/sfen/BinSfenInputStream.cpp \
+	tools/sfen/BinSfenOutputStream.cpp \
+	tools/sfen/BinpackSfenInputStream.cpp \
+	tools/sfen/BinpackSfenOutputStream.cpp \
 
 OBJS = $(notdir $(SRCS:.cpp=.o))
 
-VPATH = syzygy:nnue:nnue/features:eval:extra:tools
+VPATH = syzygy:nnue:nnue/features:eval:extra:tools:tools/sfen
 
 ### ==========================================================================
 ### Section 2. High-level Configuration
