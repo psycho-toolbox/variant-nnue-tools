@@ -1,6 +1,5 @@
 #include "transform.h"
 
-#include "sfen_stream.h"
 #include "packed_sfen.h"
 #include "sfen_writer.h"
 
@@ -120,8 +119,8 @@ namespace Stockfish::Tools
         Position& pos = th->rootPos;
         StateInfo si;
 
-        auto in = Tools::open_sfen_input_file(params.input_filename);
-        auto out = Tools::create_new_sfen_output(params.output_filename);
+        auto in = Tools::Sfen::open_input_file(params.input_filename);
+        auto out = Tools::Sfen::create_output_file(params.output_filename);
 
         if (in == nullptr)
         {
@@ -266,7 +265,7 @@ namespace Stockfish::Tools
 
         buffer.reserve(batch_size);
 
-        auto out = Tools::create_new_sfen_output(params.output_filename);
+        auto out = Tools::Sfen::create_output_file(params.output_filename);
 
         std::mutex mutex;
         uint64_t num_processed = 0;
@@ -348,7 +347,7 @@ namespace Stockfish::Tools
     void do_rescore_data(RescoreParams& params)
     {
         // TODO: Use SfenReader once it works correctly in sequential mode. See issue #271
-        auto in = Tools::open_sfen_input_file(params.input_filename);
+        auto in = Tools::Sfen::open_input_file(params.input_filename);
         auto readsome = [&in, mutex = std::mutex{}](int n) mutable -> PSVector {
 
             PSVector psv;
@@ -372,7 +371,7 @@ namespace Stockfish::Tools
             return psv;
         };
 
-        auto sfen_format = ends_with(params.output_filename, ".binpack") ? SfenOutputType::Binpack : SfenOutputType::Bin;
+        auto sfen_format = Sfen::FileFormat::to_enum(std::filesystem::path(params.output_filename).extension().string());
 
         auto out = SfenWriter(
             params.output_filename,
@@ -443,11 +442,13 @@ namespace Stockfish::Tools
 
     void do_rescore(RescoreParams& params)
     {
-        if (ends_with(params.input_filename, ".epd"))
+        auto extension = std::filesystem::path(params.input_filename).extension().string();
+
+        if (extension == ".epd")
         {
             do_rescore_epd(params);
         }
-        else if (ends_with(params.input_filename, ".bin") || ends_with(params.input_filename, ".binpack"))
+        else if ((extension == ".bin") || (extension == ".binpack"))
         {
             do_rescore_data(params);
         }

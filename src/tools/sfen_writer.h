@@ -1,5 +1,5 @@
 #include "packed_sfen.h"
-#include "sfen_stream.h"
+#include "sfen/SfenStreamFactory.hpp"
 
 #include "misc.h"
 
@@ -26,7 +26,10 @@ namespace Stockfish::Tools {
         static constexpr size_t SFEN_WRITE_SIZE = 5000;
 
         // File name to write and number of threads to create
-        SfenWriter(std::string filename_, int thread_num, uint64_t save_count, SfenOutputType sfen_output_type)
+        SfenWriter(std::string filename_, int thread_num, uint64_t save_count, Sfen::FileFormat::Enum sfen_output_type)
+        : filename(filename_)
+        , save_every(save_count)
+        , sfen_format(sfen_output_type)
         {
             sfen_buffers_pool.reserve((size_t)thread_num * 10);
             sfen_buffers.resize(thread_num);
@@ -34,10 +37,7 @@ namespace Stockfish::Tools {
             auto out = sync_region_cout.new_region();
             out << "INFO (sfen_writer): Creating new data file at " << filename_ << std::endl;
 
-            sfen_format = sfen_output_type;
-            output_file_stream = create_new_sfen_output(filename_, sfen_format);
-            filename = filename_;
-            save_every = save_count;
+            output_file_stream = Sfen::create_output_file(filename_, sfen_format);
 
             finished = false;
 
@@ -156,7 +156,7 @@ namespace Stockfish::Tools {
                             // Add ios::app in consideration of overwriting.
                             // (Depending on the operation, it may not be necessary.)
                             std::string new_filename = filename + "_" + std::to_string(n);
-                            output_file_stream = create_new_sfen_output(new_filename, sfen_format);
+                            output_file_stream = Sfen::create_output_file(new_filename, sfen_format);
 
                             auto out = sync_region_cout.new_region();
                             out << "INFO (sfen_writer): Creating new data file at " << new_filename << std::endl;
@@ -168,10 +168,7 @@ namespace Stockfish::Tools {
 
     private:
 
-        std::unique_ptr<BasicSfenOutputStream> output_file_stream;
-
-        // A new net is saved after every save_every sfens are processed.
-        uint64_t save_every = std::numeric_limits<uint64_t>::max();
+        std::unique_ptr<Sfen::OutputStreamInterface> output_file_stream;
 
         // File name passed in the constructor
         std::string filename;
@@ -182,7 +179,10 @@ namespace Stockfish::Tools {
         // Flag that all threads have finished
         std::atomic<bool> finished;
 
-        SfenOutputType sfen_format;
+        // A new net is saved after every save_every sfens are processed.
+        uint64_t save_every = std::numeric_limits<uint64_t>::max();
+
+        Sfen::FileFormat::Enum sfen_format;
 
         // buffer before writing to file
         // sfen_buffers is the buffer for each thread

@@ -1,6 +1,5 @@
 #include "stats.h"
 
-#include "sfen_stream.h"
 #include "packed_sfen.h"
 #include "sfen_writer.h"
 
@@ -1193,7 +1192,7 @@ namespace Stockfish::Tools::Stats
         Position& pos = th->rootPos;
         StateInfo si;
 
-        auto in = Tools::open_sfen_input_file(filename);
+        auto in = Tools::Sfen::open_input_file(filename);
 
         auto on_entry = [&](const Position& position, const Move& move, const PackedSfenValue& psv) {
             statistic_gatherers.on_entry(position, move, psv);

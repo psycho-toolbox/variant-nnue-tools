@@ -63,7 +63,7 @@ namespace Stockfish::Tools
 
             std::string output_file_name = "training_data_nonpv";
 
-            SfenOutputType sfen_format = SfenOutputType::Binpack;
+            Sfen::FileFormat::Enum sfen_format = Sfen::FileFormat::Binpack;
 
             std::string seed;
 
@@ -451,9 +451,9 @@ namespace Stockfish::Tools
         if (!sfen_format.empty())
         {
             if (sfen_format == "bin")
-                params.sfen_format = SfenOutputType::Bin;
+                params.sfen_format = Sfen::FileFormat::Bin;
             else if (sfen_format == "binpack")
-                params.sfen_format = SfenOutputType::Binpack;
+                params.sfen_format = Sfen::FileFormat::Binpack;
             else
                 cout << "WARNING: Unknown sfen format `" << sfen_format << "`. Using bin\n";
         }
